@@ -1,12 +1,15 @@
 using Nancy;
 using Nancy.ModelBinding;
+using ShoppingCart.EventFeed;
 
 namespace ShoppingCart.ShoppingCart
 {
     public class ShoppingCartModule : NancyModule
     {
         public ShoppingCartModule(
-            IShoppingCartStore shoppingCartStore
+            IShoppingCartStore shoppingCartStore,
+            IProductCatalogClient productCatalog,
+            IEventStore eventStore
         ) : base("/shoppingCart")
         {
             Get(
@@ -14,6 +17,25 @@ namespace ShoppingCart.ShoppingCart
                 {
                     var userId = (int) parameters.userid;
                     return shoppingCartStore.Get(userId);
+                }
+            );
+
+            Post(
+                "/{userid:int}/items",
+                async(parameters, _) =>
+                {
+                    var productCatalogIds = this.Bind<int[]>();
+                    var userId = (int) parameters.userId;
+
+                    var shoppingCart = shoppingCartStore.Get(userId);
+                    var shoppingCartItems = await
+                        productCatalog
+                            .GetShoppingCartItems(productCatalogIds)
+                            .ConfigureAwait(false);
+                    shoppingCart.AddItems(shoppingCartItems, eventStore);
+                    shoppingCartStore.Save(shoppingCart);
+
+                    return shoppingCart;
                 }
             );
         }
