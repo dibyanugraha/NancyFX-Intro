@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Nancy.Owin;
 
-namespace NancyIntro
+namespace ShoppingCart
 {
     public class Startup
     {
