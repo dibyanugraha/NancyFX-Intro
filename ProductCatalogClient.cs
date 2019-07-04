@@ -14,8 +14,25 @@ namespace ShoppingCart
         private static string productCatalogApiUrl = @"";
         private static string getProductPathTemplate = @"";
 
+        public async Task<IEnumerable<ShoppingCartItem>>
+            GetShoppingCartItems(int[] productCatalogIds)
+            {
+                var exponentialRetryPolicy =
+                    Policy
+                        .Handle<Exception>()
+                        .WaitAndRetryAsync(
+                            3,
+                            attempt => TimeSpan.FromMilliseconds(100 * Math.Pow(2, attempt)),
+                            (ex, _) => Console.WriteLine(ex.ToString())
+                        )
+                        .ExecuteAndCaptureAsync(
+                        async () =>
+                            await GetItemsFromCatalogServices(productCatalogIds).ConfigureAwait(false)
+                );
+            }
+
         private static async Task<HttpResponseMessage>
-        RequestProductFromProductCatalogApi(int[] productCatalogIds)
+            RequestProductFromProductCatalogApi(int[] productCatalogIds)
         {
             var productResources = string.Format(
                 getProductPathTemplate, string.Join(",", productCatalogIds)
@@ -30,7 +47,7 @@ namespace ShoppingCart
         }
 
         public async Task<IEnumerable<ShoppingCartItem>>
-          GetShoppingCartItems(int[] productCatalogueIds)
+          GetItemsFromCatalogServices(int[] productCatalogueIds)
         {
             var response = await
                 RequestProductFromProductCatalogApi(productCatalogueIds).ConfigureAwait(false);
