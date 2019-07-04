@@ -13,9 +13,29 @@ namespace ShoppingCart
     {
         private static string productCatalogApiUrl = @"";
         private static string getProductPathTemplate = @"";
+        
+#region GetShoppingCartItems by the book
+    
+        private static Polly.Retry.AsyncRetryPolicy exponentialRetryPolicy =
+                    Policy
+                        .Handle<Exception>()
+                        .WaitAndRetryAsync(
+                            3,
+                            attempt => TimeSpan.FromMilliseconds(100 * Math.Pow(2, attempt)),
+                            (ex, _) => Console.WriteLine(ex.ToString())
+                        );
 
         public async Task<IEnumerable<ShoppingCartItem>>
-            GetShoppingCartItems(int[] productCatalogIds)
+            GetShoppingCartItems(int[] productCatalogIds) =>
+            await exponentialRetryPolicy
+                .ExecuteAsync(
+                    async () => await
+                        GetItemsFromCatalogServices(productCatalogIds).ConfigureAwait(false)
+                );
+#endregion
+#region My own version of GetShoppingCartItems
+        public async Task<IEnumerable<ShoppingCartItem>>
+            GetShoppingCartItems_aries(int[] productCatalogIds)
             {
                 var exponentialRetryPolicy =
                     Policy
@@ -24,12 +44,14 @@ namespace ShoppingCart
                             3,
                             attempt => TimeSpan.FromMilliseconds(100 * Math.Pow(2, attempt)),
                             (ex, _) => Console.WriteLine(ex.ToString())
-                        )
-                        .ExecuteAndCaptureAsync(
-                        async () =>
-                            await GetItemsFromCatalogServices(productCatalogIds).ConfigureAwait(false)
+                        );
+
+                return await exponentialRetryPolicy.ExecuteAsync(
+                    async () => await
+                        GetItemsFromCatalogServices(productCatalogIds)
                 );
             }
+#endregion
 
         private static async Task<HttpResponseMessage>
             RequestProductFromProductCatalogApi(int[] productCatalogIds)
