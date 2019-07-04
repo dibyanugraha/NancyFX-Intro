@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using ShoppingCart.ShoppingCart;
 
 namespace ShoppingCart.EventFeed
 {

@@ -1,6 +1,5 @@
 namespace ShoppingCart.ShoppingCart
 {
-
     public class ShoppingCartItem
     {
         public int ProductCatalogueId { get; }
